@@ -22,17 +22,71 @@
       "
     >
       <button onClick="newBook()">New book</button>
+      <p data-gamestate></p>
+      <p style="font-size: 32px; font-weight: bold" data-timer>00:00</p>
     </div>
 
     <script type="text/javascript">
       const socket = io("http://localhost:3000");
 
-      var idle = true;
-
       const username = prompt("Username");
       const room = "teste1";
 
+      const gameStateContainer = document.querySelector("[data-gamestate]");
+      const playersContainer = document.querySelector("[data-players]");
+      const timerContainer = document.querySelector("[data-timer]");
+
       socket.emit("joinGame", { username, room });
+
+      socket.on("gameState", handleGameState);
+
+      function filterOwnPage(pages) {
+        return pages.filter((page) => {
+          return page.actor.toString() === socket.id.toString();
+        })[0];
+      }
+
+      function handleGameState({ event, timestamp, pages }) {
+        console.log({ event, timestamp, pages });
+
+        const page = !pages || filterOwnPage(pages);
+        console.log("page", page);
+        var msg = "";
+
+        switch (event) {
+          case "idle":
+            msg = "Waiting for the game to start! Click on 'New book'";
+            break;
+          case "interval":
+            msg = "Time's up! Interval... Waiting for the next round";
+            break;
+          case "play":
+            switch (page.type) {
+              case "bootstrap":
+                msg = "Please write something for someone else to draw";
+                break;
+              case "draw":
+                msg = "Someone asked you to draw a REPLACE";
+                break;
+              case "guess":
+                msg = "Guess what is this draw";
+                break;
+              default:
+                break;
+            }
+            break;
+          case "presentation":
+            msg = "All rounds played, time for presentation";
+            break;
+          default:
+            break;
+        }
+
+        timerContainer.innerText = new Date(timestamp * 1000)
+          .toISOString()
+          .substr(11, 8);
+        gameStateContainer.innerText = msg;
+      }
 
       function newBook() {
         socket.emit("newBook", { duration: 30, firstAction: "guess" });

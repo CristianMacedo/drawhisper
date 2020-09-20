@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"
+      integrity="sha512-v8ng/uGxkge3d1IJuEo6dJP8JViyvms0cly9pnbfRxT6/31c3dRWxIiwGnMSWwZjHKOuY3EVmijs7k1jz/9bLA=="
+      crossorigin="anonymous"
+    ></script>
+  </head>
+  <body>
+    <div
+      class="container"
+      style="
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+      "
+    >
+      <button onClick="newBook()">New book</button>
+    </div>
+
+    <script type="text/javascript">
+      const socket = io("http://localhost:3000");
+
+      var idle = true;
+
+      const username = prompt("Username");
+      const room = "teste1";
+
+      socket.emit("joinGame", { username, room });
+
+      function newBook() {
+        socket.emit("newBook", { duration: 30, firstAction: "guess" });
+      }
+    </script>
+  </body>
+</html>

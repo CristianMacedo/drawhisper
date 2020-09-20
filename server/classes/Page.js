@@ -1,15 +1,15 @@
 class Page {
-  constructor(author) {
+  constructor(author, type) {
     this.written = false;
     this.author = author;
+    this.type = type;
 
-    this.type = null;
     this.content = null;
-    this.guesser = null;
+    this.actor = null;
   }
 
-  setGuesser(guesser) {
-    this.guesser = guesser;
+  setActor(actor) {
+    this.actor = actor;
   }
 
   setContent(type, content) {

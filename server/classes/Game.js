@@ -4,16 +4,27 @@ class Game {
   initialState = {
     event: "idle",
     timestamp: 0,
+    pages: [],
   };
 
   fps = 1;
+  interval = 10;
 
-  events = ["idle", "bootstrap", "draw", "guess", "presenting"];
+  // events = {
+  //   idle: () => {},
+  //   play: () => {},
+  //   presenting: () => {}
+  // }
+
+  events = ["idle", "play", "interval", "presentation"];
 
   constructor(io, room) {
     console.log(`[drawhisper] [${room}] game created`);
 
     this.state = Object.assign({}, this.initialState);
+
+    this.timeout = false;
+    this.duration = 30;
 
     this.gameLoopInterval = null;
     this.timerInterval = null;
@@ -34,10 +45,7 @@ class Game {
     };
   }
 
-  setEvent(eventNumber) {
-    this.setState({ event: this.events[eventNumber] });
-  }
-
+  // TODO: Create different file for hanbdling users
   // TODO: Add user to players array
   // TODO: Add event handlers for the given socket
   // TODO: Emit players list to socket
@@ -82,23 +90,13 @@ class Game {
     )[0];
   }
 
-  stopGameLoop() {
-    clearInterval(this.gameLoopInterval);
-  }
-
-  startGameLoop() {
-    this.stopGameLoop();
-    this.gameLoopInterval = setInterval(() => {
-      this.io.to(this.room).emit("gameState", this.state);
-    }, 1000 / this.fps);
-  }
-
-  createTimer(duration, callback) {
+  createTimer(duration) {
     this.setState({ timestamp: duration });
+    this.timeout = false;
     this.timerInterval = setInterval(() => {
-      if (this.state.timestamp < 0) {
+      if (this.state.timestamp <= 0) {
+        this.timeout = true;
         clearInterval(this.timerInterval);
-        return callback();
       }
       this.setState({
         timestamp: this.state.timestamp - 1,
@@ -106,14 +104,59 @@ class Game {
     }, 1000);
   }
 
+  newRound() {
+    this.setState({ event: "play" });
+    this.createTimer(this.duration);
+  }
+
+  newPresentation() {
+    this.setState({ event: "presentation" });
+  }
+
+  newInterval() {
+    this.setState({ event: "interval" });
+    this.createTimer(this.interval);
+  }
+
+  updatePages() {
+    const nextPages = this.books[this.books.length - 1].nextPage();
+    this.setState({ pages: nextPages });
+  }
+
+  startGameLoop() {
+    this.updatePages();
+    this.newRound();
+
+    clearInterval(this.gameLoopInterval);
+
+    this.gameLoopInterval = setInterval(() => {
+      if (this.timeout) {
+        switch (this.state.event) {
+          case "interval":
+            this.updatePages();
+            this.state.pages ? this.newRound() : this.newPresentation();
+            break;
+          case "play":
+            this.newInterval();
+            break;
+          case "presentation":
+            break;
+          default:
+            break;
+        }
+      }
+
+      this.io.to(this.room).emit("gameState", this.state);
+    }, 1000 / this.fps);
+  }
+
   // TODO: Update state event type according
   // TODO: Create round timer and verify if time has ended
   // TODO: Verify if player is admin
   handleNewBook(socket, { duration, firstAction }) {
-    this.setEvent(1);
-    this.startGameLoop();
-    this.createTimer(duration, () => this.setEvent(0));
+    this.duration = duration;
     this.books.push(new Book(this.getPlayersId(), socket.id));
+    this.startGameLoop();
   }
 
   // TODO: Verify amount of pages remaining for the round

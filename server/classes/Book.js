@@ -1,4 +1,5 @@
 const Page = require("./Page");
+const e = require("express");
 
 // TODO: Add more identfiers (ID, creation date...)
 
@@ -11,26 +12,38 @@ class Book {
     this.authors = authors;
     this.owner = owner;
 
-    this.chapters = Array.from({ length: authors.length }, (chapter, index) =>
-      Array.from(
-        { length: authors.length - 1 },
-        () => new Page(this.authors[index])
-      )
+    this.currentPage = -1;
+
+    this.pages = Array.from({ length: authors.length }, (chapter, i) =>
+      Array.from({ length: authors.length }, (page, j) => {
+        const type = j === 0 ? "bootstrap" : j % 2 == 0 ? "guess" : "draw";
+        return new Page(this.authors[i], type);
+      })
     );
 
-    this.sortGuessers();
+    this.sortActors();
   }
 
-  sortGuessers() {
-    for (let i = 0; i < this.chapters.length; i++) {
-      for (let j = 0; j < this.chapters[i].length; j++) {
-        this.chapters[i][j].setGuesser(
-          this.authors[(i + j + 1) % this.authors.length]
+  nextPage() {
+    this.currentPage += 1;
+    if (this.currentPage + 1 < this.pages.length) {
+      return this.pages.map((page) => page[this.currentPage]);
+    }
+    return false;
+  }
+
+  sortActors() {
+    for (let i = 0; i < this.pages.length; i++) {
+      for (let j = 0; j < this.pages[i].length; j++) {
+        this.pages[i][j].setActor(
+          j === 0
+            ? this.pages[i][j].author
+            : this.authors[(i + j) % this.authors.length]
         );
       }
     }
 
-    console.log(`[drawhisper] new guessing sequence created:`, this.chapters);
+    console.log(`[drawhisper] new guessing sequence created:`, this.pages);
   }
 }
 

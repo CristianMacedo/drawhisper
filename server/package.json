@@ -1,24 +1,24 @@
 {
-  "name": "drawhisper_server",
+  "name": "drawhisper-server",
   "version": "1.0.0",
-  "description": "The server API for the Drawhisper online drawing game",
+  "description": "The server for the online drawing guess game Drawhisper",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/CristianMacedo/drawhisper.git"
+    "dev": "nodemon index.js",
+    "start": "node index.js"
   },
   "keywords": [
     "drawhisper",
-    "socket.io",
-    "game"
+    "server",
+    "backend"
   ],
   "author": "Cristian Macedo",
   "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/CristianMacedo/drawhisper/issues"
+  "dependencies": {
+    "express": "^4.17.1",
+    "socket.io": "^2.3.0"
   },
-  "homepage": "https://github.com/CristianMacedo/drawhisper#readme"
+  "devDependencies": {
+    "nodemon": "^2.0.4"
+  }
 }

@@ -6,6 +6,8 @@ class Game {
     timestamp: 0,
   };
 
+  fps = 1;
+
   events = ["idle", "bootstrap", "draw", "guess", "presenting"];
 
   constructor(io, room) {
@@ -13,6 +15,8 @@ class Game {
 
     this.state = Object.assign({}, this.initialState);
 
+    this.gameLoopInterval = null;
+    this.timerInterval = null;
     this.players = [];
     this.books = [];
 
@@ -30,6 +34,10 @@ class Game {
     };
   }
 
+  setEvent(eventNumber) {
+    this.setState({ event: this.events[eventNumber] });
+  }
+
   // TODO: Add user to players array
   // TODO: Add event handlers for the given socket
   // TODO: Emit players list to socket
@@ -42,12 +50,25 @@ class Game {
 
     socket.join(this.room);
 
+    socket.emit("gameState", this.state);
+
     socket.on("newBook", (payload) => this.handleNewBook(socket, payload));
     socket.on("newPage", (payload) => this.handleNewPage(socket, payload));
   }
 
   getPlayersId() {
-    return this.players.map((player) => player.username);
+    return this.players.map((player) => player.id);
+  }
+
+  updatePlayer(id, content) {
+    return (this.players = this.players.map((player) => {
+      if (player.id == id) {
+        return {
+          ...player,
+          ...content,
+        };
+      }
+    }));
   }
 
   getPlayer(id) {
@@ -61,11 +82,37 @@ class Game {
     )[0];
   }
 
+  stopGameLoop() {
+    clearInterval(this.gameLoopInterval);
+  }
+
+  startGameLoop() {
+    this.stopGameLoop();
+    this.gameLoopInterval = setInterval(() => {
+      this.io.to(this.room).emit("gameState", this.state);
+    }, 1000 / this.fps);
+  }
+
+  createTimer(duration, callback) {
+    this.setState({ timestamp: duration });
+    this.timerInterval = setInterval(() => {
+      if (this.state.timestamp < 0) {
+        clearInterval(this.timerInterval);
+        return callback();
+      }
+      this.setState({
+        timestamp: this.state.timestamp - 1,
+      });
+    }, 1000);
+  }
+
   // TODO: Update state event type according
   // TODO: Create round timer and verify if time has ended
   // TODO: Verify if player is admin
   handleNewBook(socket, { duration, firstAction }) {
-    this.setState({ event: this.events[1] });
+    this.setEvent(1);
+    this.startGameLoop();
+    this.createTimer(duration, () => this.setEvent(0));
     this.books.push(new Book(this.getPlayersId(), socket.id));
   }
 
